@@ -3,72 +3,878 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mindmap Viewer</title>
+  <title>Mindmap Studio</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
-    #root { max-width: 1400px; margin: 0 auto; padding: 20px; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 12px; align-items: center; }
-    .toolbar-label { font-size: 14px; font-weight: 600; color: #666; margin-right: 4px; }
-    .separator { width: 1px; height: 28px; background: #ddd; margin: 0 8px; }
-    .btn { padding: 8px 16px; border: 2px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: #444; }
-    .btn:hover { border-color: #999; background: #fafafa; }
-    .btn.active { border-color: #4a90d9; background: #eef4fb; color: #2a6bb5; }
-    .viewer { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 16px; text-align: center; }
-    .viewer img { max-width: 100%; height: auto; }
-    .filename { font-size: 12px; color: #999; margin-top: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; }
+    #root { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    /* ── Header ─────────────────────────────────────── */
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .header h1 { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+    .header h1 span { color: #6c9bff; }
+
+    /* ── Buttons ─────────────────────────────────────── */
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-primary { background: #6c9bff; color: #0f0f0f; }
+    .btn-primary:hover { background: #89b0ff; transform: translateY(-1px); }
+    .btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: #1e1e1e; color: #ccc; border: 1px solid #333; }
+    .btn-secondary:hover { background: #2a2a2a; border-color: #555; }
+    .btn-ghost { background: transparent; color: #999; padding: 8px 12px; }
+    .btn-ghost:hover { color: #fff; }
+    .btn-danger { background: #3a1a1a; color: #ff6b6b; border: 1px solid #4a2020; }
+    .btn-danger:hover { background: #4a2020; }
+    .btn-export { background: #1a3a1a; color: #6bff6b; border: 1px solid #204a20; }
+    .btn-export:hover { background: #204a20; }
+    .btn-future { background: #1e1e1e; color: #555; border: 1px solid #2a2a2a; cursor: default; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ── Card grid ───────────────────────────────────── */
+    .section-label { font-size: 13px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 40px; }
+
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; position: relative; }
+    .card:hover { border-color: #444; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .card-new { border: 2px dashed #333; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; }
+    .card-new:hover { border-color: #6c9bff; }
+    .card-new-icon { font-size: 32px; color: #555; margin-bottom: 8px; }
+    .card-new-text { font-size: 14px; color: #666; }
+    .card-badge { position: absolute; top: 12px; right: 12px; font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-template { background: #1a2a3a; color: #6c9bff; }
+    .badge-saved { background: #1a3a2a; color: #6bcc6b; }
+
+    .card-center { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 10px; }
+    .card-groups { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .card-group-tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #252525; color: #aaa; }
+    .card-meta { font-size: 12px; color: #555; display: flex; justify-content: space-between; align-items: center; }
+    .card-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+    .card:hover .card-actions { opacity: 1; }
+
+    /* ── Mini preview in cards ────────────────────────── */
+    .card-preview { height: 80px; margin-bottom: 12px; border-radius: 6px; overflow: hidden; background: #111; display: flex; align-items: center; justify-content: center; }
+    .card-preview svg { width: 100%; height: 100%; }
+
+    /* ── Form / Builder ──────────────────────────────── */
+    .builder { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px; }
+    .builder-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 24px; }
+
+    .form-row { margin-bottom: 20px; }
+    .form-label { font-size: 13px; font-weight: 600; color: #888; margin-bottom: 6px; display: block; }
+    .form-input { width: 100%; padding: 10px 14px; background: #111; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.15s; }
+    .form-input:focus { border-color: #6c9bff; }
+    .form-input::placeholder { color: #444; }
+    .form-input-sm { padding: 8px 12px; font-size: 13px; }
+
+    .group-card { background: #111; border: 1px solid #2a2a2a; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .group-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .group-number { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .group-items { display: flex; flex-direction: column; gap: 6px; margin-left: 38px; }
+    .group-item-row { display: flex; gap: 8px; align-items: center; }
+    .group-item-row .form-input { flex: 1; }
+    .add-item-btn { font-size: 12px; color: #6c9bff; background: none; border: none; cursor: pointer; padding: 4px 0; margin-left: 38px; margin-top: 4px; font-family: inherit; }
+    .add-item-btn:hover { color: #89b0ff; }
+    .remove-btn { width: 24px; height: 24px; border: none; background: none; color: #555; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; }
+    .remove-btn:hover { color: #ff6b6b; background: #2a1a1a; }
+
+    .add-group-btn { width: 100%; padding: 12px; border: 1px dashed #333; border-radius: 10px; background: none; color: #666; cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.15s; margin-bottom: 20px; }
+    .add-group-btn:hover { border-color: #6c9bff; color: #6c9bff; }
+    .add-group-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .add-group-btn:disabled:hover { border-color: #333; color: #666; }
+
+    .builder-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #222; }
+
+    /* ── Viewer ───────────────────────────────────────── */
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; margin-bottom: 12px; align-items: center; }
+    .toolbar-label { font-size: 13px; font-weight: 600; color: #666; margin-right: 4px; }
+    .separator { width: 1px; height: 28px; background: #333; margin: 0 8px; }
+    .tbtn { padding: 7px 14px; border: 1px solid #333; border-radius: 6px; background: #1e1e1e; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: #999; font-family: inherit; }
+    .tbtn:hover { border-color: #555; color: #ccc; }
+    .tbtn.active { border-color: #6c9bff; background: #1a2540; color: #6c9bff; }
+
+    .viewer { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 20px; text-align: center; }
+    .svg-canvas { border-radius: 8px; overflow: hidden; }
+    .svg-canvas svg { width: 100%; height: auto; display: block; }
+
+    .export-bar { display: flex; gap: 10px; padding: 14px 16px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; margin-top: 12px; align-items: center; }
+    .export-bar-label { font-size: 13px; font-weight: 600; color: #666; margin-right: auto; }
+
+    .back-row { margin-bottom: 20px; }
+
+    @media (max-width: 640px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .header { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .toolbar { gap: 6px; padding: 12px; }
+      .builder { padding: 18px; }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const THEMES = ["classic", "midnight", "ember", "safari"];
-    const STYLES = ["organic", "angular"];
-    const LAYOUTS = ["horizontal", "vertical"];
+    /* ================================================================
+       CONSTANTS & THEMES
+       ================================================================ */
+    const THEMES = {
+      classic:  { background: "#FFFFFF", center_bg: "#E0E0E0", center_border: "#AAAAAA", center_text: "#333333", branches: ["#5B9BD5", "#70AD47", "#E07B7B", "#ED7D31"] },
+      midnight: { background: "#0E141C", center_bg: "#314B6E", center_border: "#607EA2", center_text: "#BDB3A3", branches: ["#607EA2", "#8197AC", "#BDB3A3", "#314B6E"] },
+      ember:    { background: "#210100", center_bg: "#8C0902", center_border: "#B14A36", center_text: "#FECE79", branches: ["#E6A341", "#FECE79", "#B14A36", "#8C0902"] },
+      safari:   { background: "#78614D", center_bg: "#ACCA92", center_border: "#E0A752", center_text: "#78614D", branches: ["#ACCA92", "#E0A752", "#D44720", "#C8B896"] },
+    };
+    const THEME_NAMES = Object.keys(THEMES);
+    const STYLE_NAMES = ["organic", "angular"];
+    const LAYOUT_NAMES = ["horizontal", "vertical"];
+    const GROUP_COLORS = ["#5B9BD5", "#70AD47", "#E07B7B", "#ED7D31"];
 
-    function capitalize(s) {
-      return s.charAt(0).toUpperCase() + s.slice(1);
+    /* ================================================================
+       BUILT-IN TEMPLATES
+       ================================================================ */
+    const TEMPLATES = [
+      {
+        id: "_tmpl_community",
+        center: "Community",
+        groups: [
+          { title: "Education", items: ["Workshops", "Webinars", "Tutorials", "Tech Talks"] },
+          { title: "Documentation", items: ["API Guides", "Code Samples", "Knowledge Base"] },
+          { title: "Feedback", items: ["Surveys", "User Testing", "Feature Requests"] },
+          { title: "Marketing", items: ["Content Creation", "Social Media", "Events & Meetups", "Newsletters"] },
+        ],
+      },
+      {
+        id: "_tmpl_startup",
+        center: "Startup",
+        groups: [
+          { title: "Product", items: ["MVP", "User Research", "Roadmap"] },
+          { title: "Engineering", items: ["Frontend", "Backend", "Infrastructure", "QA"] },
+          { title: "Growth", items: ["Marketing", "Sales", "Partnerships"] },
+          { title: "Operations", items: ["Finance", "Legal", "HR", "Culture"] },
+        ],
+      },
+      {
+        id: "_tmpl_learning",
+        center: "Web Dev",
+        groups: [
+          { title: "Frontend", items: ["HTML/CSS", "JavaScript", "React", "TypeScript"] },
+          { title: "Backend", items: ["Node.js", "Databases", "APIs", "Auth"] },
+          { title: "DevOps", items: ["Git", "CI/CD", "Docker", "Cloud"] },
+          { title: "Soft Skills", items: ["Communication", "Problem Solving", "Teamwork"] },
+        ],
+      },
+    ];
+
+    /* ================================================================
+       LOCALSTORAGE HELPERS
+       ================================================================ */
+    const STORAGE_KEY = "mindmap_studio_saved";
+
+    function loadSaved() {
+      try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : []; }
+      catch { return []; }
+    }
+    function persistAll(maps) { localStorage.setItem(STORAGE_KEY, JSON.stringify(maps)); }
+
+    function addMap(mapData) {
+      const maps = loadSaved();
+      maps.unshift({ ...mapData, id: Date.now().toString(), createdAt: new Date().toISOString() });
+      persistAll(maps);
+      return maps;
+    }
+    function updateMap(id, mapData) {
+      const maps = loadSaved();
+      const i = maps.findIndex(m => m.id === id);
+      if (i !== -1) maps[i] = { ...maps[i], ...mapData };
+      persistAll(maps);
+      return maps;
+    }
+    function deleteMap(id) {
+      const maps = loadSaved().filter(m => m.id !== id);
+      persistAll(maps);
+      return maps;
     }
 
+    /* ================================================================
+       SVG RENDERER  —  mirrors mm.py logic in pure JS
+       ================================================================ */
+    function esc(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function bezier(t, p0, p1, p2, p3) {
+      const u = 1-t;
+      return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
+    }
+
+    function curvePath(x0,y0,x1,y1) {
+      const mx = (x0+x1)/2;
+      return `M${x0},${y0} C${mx},${y0} ${mx},${y1} ${x1},${y1}`;
+    }
+
+    function orthoPath(x0,y0,x1,y1) {
+      const mx = (x0+x1)/2;
+      return `M${x0},${y0} L${mx},${y0} L${mx},${y1} L${x1},${y1}`;
+    }
+
+    function tapered(x0,y0,x1,y1,sty,lwS,lwE,color,alpha=1) {
+      const n=20, mx=(x0+x1)/2;
+      let out = "";
+      for (let i=0; i<n; i++) {
+        const t1=i/n, t2=(i+1)/n, frac=i/(n-1);
+        const lw = lwS + (lwE-lwS)*frac;
+        let px1,py1,px2,py2;
+        if (sty==="organic") {
+          px1=bezier(t1,x0,mx,mx,x1); py1=bezier(t1,y0,y0,y1,y1);
+          px2=bezier(t2,x0,mx,mx,x1); py2=bezier(t2,y0,y0,y1,y1);
+        } else {
+          const s1=Math.abs(mx-x0), s2=Math.abs(y1-y0), tot=s1+s2+Math.abs(x1-mx);
+          if (!tot) continue;
+          function op(d) {
+            if (d<=s1) { return [x0+(mx-x0)*(s1?d/s1:0), y0]; }
+            if (d<=s1+s2) { return [mx, y0+(y1-y0)*(s2?(d-s1)/s2:0)]; }
+            const r=Math.abs(x1-mx); return [mx+(x1-mx)*(r?(d-s1-s2)/r:0), y1];
+          }
+          [px1,py1]=op(t1*tot); [px2,py2]=op(t2*tot);
+        }
+        out += `<line x1="${px1.toFixed(1)}" y1="${py1.toFixed(1)}" x2="${px2.toFixed(1)}" y2="${py2.toFixed(1)}" stroke="${color}" stroke-width="${lw.toFixed(1)}" stroke-linecap="round" opacity="${alpha}"/>`;
+      }
+      return out;
+    }
+
+    function renderSVG(data, theme="classic", style="organic", layout="horizontal") {
+      const t = THEMES[theme];
+      return layout === "vertical"
+        ? renderVertical(data, t, style)
+        : renderHorizontal(data, t, style);
+    }
+
+    /*
+     * HORIZONTAL LAYOUT
+     *   1 group -> right     2 -> left+right
+     *   3 -> LT, RT, LB     4 -> quadrants
+     */
+    function renderHorizontal(data, t, sty) {
+      const groups = (data.groups||[]).slice(0,4);
+      const ng = groups.length;
+      const cl = data.center||"Mindmap";
+      const cw = Math.max(120, cl.length*14+40);
+
+      // Adaptive spacing: shrink item spacing for many items
+      const maxN = Math.max(1, ...groups.map(g=>(g.items||[]).length));
+      const ITEM_SP = Math.min(36, Math.max(22, 260/maxN));
+      const ITEM_OFF = 150;
+
+      // Adaptive canvas size
+      const neededH = maxN * ITEM_SP + 80;
+      const dx = Math.max(220, cw/2 + 120); // adapt to center box width
+      // Estimate max item text width to ensure nothing clips
+      const maxItemLen = Math.max(0, ...groups.flatMap(g=>(g.items||[]).map(i=>(typeof i==="string"?i:i.label||i[0]||"").length)));
+      const itemTextW = maxItemLen * 8 + 20;
+      const W = Math.max(1100, (dx + ITEM_OFF + itemTextW) * 2 + 40), H = Math.max(420, ng>2 ? neededH*2+80 : neededH+120);
+      const cx = W/2, cy = H/2;
+      const dy = Math.min(140, H/4);
+      let positions;
+      if (ng===1) positions=[{x:cx+dx,y:cy,side:"right"}];
+      else if (ng===2) positions=[{x:cx-dx,y:cy,side:"left"},{x:cx+dx,y:cy,side:"right"}];
+      else if (ng===3) positions=[{x:cx-dx,y:cy-dy,side:"left"},{x:cx+dx,y:cy-dy,side:"right"},{x:cx-dx,y:cy+dy,side:"left"}];
+      else positions=[{x:cx-dx,y:cy-dy,side:"left"},{x:cx+dx,y:cy-dy,side:"right"},{x:cx-dx,y:cy+dy,side:"left"},{x:cx+dx,y:cy+dy,side:"right"}];
+
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,sans-serif">`;
+      s += `<rect width="${W}" height="${H}" fill="${t.background}"/>`;
+      s += `<rect x="${cx-cw/2}" y="${cy-24}" width="${cw}" height="48" rx="12" fill="${t.center_bg}" stroke="${t.center_border}" stroke-width="2"/>`;
+      s += `<text x="${cx}" y="${cy+6}" text-anchor="middle" font-size="18" font-weight="700" fill="${t.center_text}">${esc(cl)}</text>`;
+
+      groups.forEach((g,idx) => {
+        const pos = positions[idx];
+        const color = t.branches[idx%t.branches.length];
+        const left = pos.side==="left";
+        const items = (g.items||[]).map(i => typeof i==="string"?i:i.label||i[0]||"");
+        const n = items.length;
+        const titleW = g.title.length * 9 + 14;
+
+        // Main branch: center edge -> near side of group title (stop before text)
+        const connX = left ? cx-cw/2-4 : cx+cw/2+4;
+        const connY = cy + (pos.y<cy ? -4 : pos.y>cy ? 4 : 0);
+        const arrX = left ? pos.x + titleW/2 + 14 : pos.x - titleW/2 - 14;
+        s += tapered(connX, connY, arrX, pos.y, sty, 8, 3, color);
+
+        // Group title centered at anchor
+        s += `<text x="${pos.x}" y="${pos.y+5}" text-anchor="middle" font-size="15" font-weight="700" fill="${color}">${esc(g.title)}</text>`;
+
+        // Sub-branches: far side of title -> items
+        const depX = left ? pos.x - titleW/2 - 8 : pos.x + titleW/2 + 8;
+        const yStart = pos.y - (n-1)*ITEM_SP/2;
+        items.forEach((label,i) => {
+          const iy = yStart + i*ITEM_SP;
+          const itemX = left ? pos.x - ITEM_OFF : pos.x + ITEM_OFF;
+          const endX = left ? itemX + 10 : itemX - 10;
+          const d = sty==="organic" ? curvePath(depX, pos.y, endX, iy) : orthoPath(depX, pos.y, endX, iy);
+          s += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" opacity="0.7" stroke-linecap="round"/>`;
+          s += `<text x="${itemX}" y="${iy+4}" text-anchor="${left?"end":"start"}" font-size="12" font-weight="600" fill="${color}">${esc(label)}</text>`;
+        });
+      });
+      s += `</svg>`;
+      return s;
+    }
+
+    /*
+     * VERTICAL LAYOUT — mirrors horizontal, rotated 90 degrees
+     *
+     *    item ──┐           ┌── item
+     *    item ──  GROUP  ────  item    ← top-left
+     *    item ──┘    ↑      └── item
+     *                |
+     *           [ CENTER ]        ← top-right group same level
+     *                |
+     *    item ──┐    ↓      ┌── item
+     *    item ──  GROUP  ────  item    ← bottom groups
+     *    item ──┘           └── item
+     *
+     *   Same logic as horizontal but:
+     *   - "left" groups go ABOVE center, "right" groups go BELOW
+     *   - items fan LEFT and RIGHT of each group (like horizontal items fan UP and DOWN)
+     *   1 group → below     2 → above+below
+     *   3 → above-L, above-R, below-L     4 → quadrants
+     */
+    function renderVertical(data, t, sty) {
+      const groups = (data.groups||[]).slice(0,4);
+      const ng = groups.length;
+      const cl = data.center||"Mindmap";
+      const cw = Math.max(120, cl.length*14+40);
+      const ch = 36;
+      const ITEM_SP = 24;    // tight vertical list spacing
+      const TICK = 16;       // tick mark length
+      const TEXT_GAP = 5;    // gap between tick and text
+      const TITLE_GAP = 18;  // gap between title and first item
+
+      const maxN = Math.max(1, ...groups.map(g=>(g.items||[]).length));
+
+      // Group offsets — narrow horizontal, tall vertical
+      const dx = 90;
+      const dy = 130 + maxN * 6; // more vertical room for longer lists
+
+      // Canvas — portrait
+      const maxItemLen = Math.max(0, ...groups.flatMap(g=>(g.items||[]).map(i=>(typeof i==="string"?i:i.label||i[0]||"").length)));
+      const itemTextW = maxItemLen * 8 + 20;
+      const W = Math.max(500, (dx + TICK + TEXT_GAP + itemTextW + 60) * 2);
+      const H = Math.max(500, ng > 2 ? dy*2 + maxN*ITEM_SP + 160 : dy + maxN*ITEM_SP + 200);
+      const cx = W/2, cy = H/2;
+
+      // Positions: groups in quadrants, close to center horizontally
+      // Left-side groups: items list to the LEFT. Right-side: items list to the RIGHT.
+      let positions;
+      if (ng===1) positions=[{x:cx, y:cy+dy, side:"left"}]; // single group below, items go left
+      else if (ng===2) positions=[{x:cx-dx, y:cy-dy, side:"left"}, {x:cx+dx, y:cy+dy, side:"right"}];
+      else if (ng===3) positions=[{x:cx-dx, y:cy-dy, side:"left"}, {x:cx+dx, y:cy-dy, side:"right"}, {x:cx-dx, y:cy+dy, side:"left"}];
+      else positions=[{x:cx-dx, y:cy-dy, side:"left"}, {x:cx+dx, y:cy-dy, side:"right"}, {x:cx-dx, y:cy+dy, side:"left"}, {x:cx+dx, y:cy+dy, side:"right"}];
+
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="-apple-system,BlinkMacSystemFont,sans-serif">`;
+      s += `<rect width="${W}" height="${H}" fill="${t.background}"/>`;
+      s += `<rect x="${cx-cw/2}" y="${cy-ch/2}" width="${cw}" height="${ch}" rx="10" fill="${t.center_bg}" stroke="${t.center_border}" stroke-width="2"/>`;
+      s += `<text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="16" font-weight="700" fill="${t.center_text}">${esc(cl)}</text>`;
+
+      groups.forEach((g,idx) => {
+        const pos = positions[idx];
+        const color = t.branches[idx%t.branches.length];
+        const left = pos.side==="left";
+        const items = (g.items||[]).map(i => typeof i==="string"?i:i.label||i[0]||"");
+        const n = items.length;
+
+        // Branch from center top/bottom to group anchor
+        const isAbove = pos.y < cy;
+        const connX = cx + (left ? -6 : 6);
+        const connY = isAbove ? cy - ch/2 - 2 : cy + ch/2 + 2;
+        s += tapered(connX, connY, pos.x, isAbove ? pos.y + 10 : pos.y - 10, sty, 6, 2.5, color);
+
+        // Group title — aligned to the side items will go
+        const ta = left ? "end" : "start";
+        const titleX = left ? pos.x - 6 : pos.x + 6;
+        s += `<text x="${titleX}" y="${pos.y+5}" text-anchor="${ta}" font-size="14" font-weight="700" fill="${color}">${esc(g.title)}</text>`;
+
+        // Items list DOWNWARD from title like a bulleted list
+        // All items go ONE direction: left groups tick LEFT, right tick RIGHT
+        // Style-aware: organic uses curves, angular uses spine+ticks
+        if (n > 0) {
+          const firstY = pos.y + TITLE_GAP;
+          const lastY = firstY + (n-1) * ITEM_SP;
+          const dir = left ? -1 : 1;
+
+          if (sty === "angular") {
+            // Angular: straight spine + tick marks
+            s += `<line x1="${pos.x}" y1="${pos.y + 10}" x2="${pos.x}" y2="${lastY}" stroke="${color}" stroke-width="2" opacity="0.4"/>`;
+            items.forEach((label, i) => {
+              const iy = firstY + i * ITEM_SP;
+              s += `<line x1="${pos.x}" y1="${iy}" x2="${pos.x + dir*TICK}" y2="${iy}" stroke="${color}" stroke-width="2" opacity="0.6"/>`;
+              s += `<text x="${pos.x + dir*(TICK+TEXT_GAP)}" y="${iy+4}" text-anchor="${left?"end":"start"}" font-size="12" font-weight="600" fill="${color}">${esc(label)}</text>`;
+            });
+          } else {
+            // Organic: each item gets a swooping curve from the title area
+            const depX = left ? pos.x - 6 : pos.x + 6;
+            const itemX = pos.x + dir * (TICK + TEXT_GAP + 4);
+            items.forEach((label, i) => {
+              const iy = firstY + i * ITEM_SP;
+              const depY = pos.y + 10 + i * 3; // stagger departure slightly
+              const d = curvePath(depX, depY, pos.x + dir*TICK, iy);
+              s += `<path d="${d}" fill="none" stroke="${color}" stroke-width="1.8" opacity="0.55" stroke-linecap="round"/>`;
+              s += `<text x="${itemX}" y="${iy+4}" text-anchor="${left?"end":"start"}" font-size="12" font-weight="600" fill="${color}">${esc(label)}</text>`;
+            });
+          }
+        }
+      });
+
+      s += `</svg>`;
+      return s;
+    }
+
+    /* Mini preview for cards — simplified small SVG */
+    function renderMiniPreview(data) {
+      const t = THEMES.classic;
+      const W=280, H=80, cx=W/2, cy=H/2;
+      const groups = (data.groups||[]).slice(0,4);
+      let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">`;
+      s += `<rect width="${W}" height="${H}" fill="#111"/>`;
+      s += `<circle cx="${cx}" cy="${cy}" r="12" fill="#333" stroke="#555" stroke-width="1"/>`;
+      s += `<text x="${cx}" y="${cy+3}" text-anchor="middle" font-size="6" fill="#aaa" font-family="sans-serif">${esc((data.center||"").slice(0,6))}</text>`;
+      const angles = [-0.6, 0.4, -0.4, 0.6];
+      groups.forEach((g,i) => {
+        const a = angles[i] || 0;
+        const ex = cx + Math.cos(Math.PI*a)*100;
+        const ey = cy + Math.sin(Math.PI*a)*28;
+        s += `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="${t.branches[i%4]}" stroke-width="1.5" opacity="0.6" stroke-linecap="round"/>`;
+        s += `<text x="${ex}" y="${ey+3}" text-anchor="middle" font-size="5" fill="${t.branches[i%4]}" font-family="sans-serif">${esc((g.title||"").slice(0,8))}</text>`;
+      });
+      s += `</svg>`;
+      return s;
+    }
+
+    /* ================================================================
+       FEATURE FLAGS  —  chrome://flags style
+       ================================================================ */
+    const FLAGS_KEY = "mindmap_studio_flags";
+    const FLAG_DEFS = [
+      { id: "show-test-suite", name: "Layout Test Suite", description: "Show renderer test cases on the home page with all layout combinations", default: false },
+      { id: "show-angular-style", name: "Angular Style", description: "Enable the angular (right-angle) drawing style option in the viewer", default: true },
+      { id: "show-vertical-layout", name: "Vertical Layout", description: "Enable the vertical layout option in the viewer", default: true },
+    ];
+
+    function loadFlags() {
+      try { const r = localStorage.getItem(FLAGS_KEY); return r ? JSON.parse(r) : {}; }
+      catch { return {}; }
+    }
+    function saveFlags(flags) { localStorage.setItem(FLAGS_KEY, JSON.stringify(flags)); }
+    function getFlag(id) { const f = loadFlags(); const def = FLAG_DEFS.find(d=>d.id===id); return f[id] !== undefined ? f[id] : (def ? def.default : false); }
+
+    /* ================================================================
+       TEST SUITE DATA
+       ================================================================ */
+    function makeItems(n) { return Array.from({length:n},(_,i)=>`Item ${i+1}`); }
+    const TEST_CASES = [
+      { label: "1G 3 items", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(3) }] }},
+      { label: "1G 10 items", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(10) }] }},
+      { label: "2G 1 item each", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(1) }, { title: "Beta", items: makeItems(1) }] }},
+      { label: "2G 5 items each", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(5) }, { title: "Beta", items: makeItems(5) }] }},
+      { label: "3G 3 items", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(3) }, { title: "Beta", items: makeItems(3) }, { title: "Gamma", items: makeItems(3) }] }},
+      { label: "3G mixed (3,3,7)", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(3) }, { title: "Beta", items: makeItems(3) }, { title: "Gamma", items: makeItems(7) }] }},
+      { label: "4G 5 items", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(5) }, { title: "Beta", items: makeItems(5) }, { title: "Gamma", items: makeItems(5) }, { title: "Delta", items: makeItems(5) }] }},
+      { label: "4G mixed (2,8,3,6)", data: { center: "Center", groups: [{ title: "Alpha", items: makeItems(2) }, { title: "Beta", items: makeItems(8) }, { title: "Gamma", items: makeItems(3) }, { title: "Delta", items: makeItems(6) }] }},
+      { label: "Long titles", data: { center: "Organization Structure", groups: [{ title: "Engineering Department", items: ["Frontend Development", "Backend Infrastructure", "Quality Assurance"] }, { title: "Marketing Division", items: ["Content Strategy", "Social Media Management", "Brand Development"] }] }},
+    ];
+
+    /* ================================================================
+       APP
+       ================================================================ */
     function App() {
-      const [theme, setTheme] = React.useState("classic");
-      const [style, setStyle] = React.useState("organic");
-      const [layout, setLayout] = React.useState("horizontal");
+      const [page, setPage] = React.useState(() => window.location.hash === "#flags" ? "flags" : "home");
+      const [savedMaps, setSavedMaps] = React.useState(loadSaved());
+      const [editingId, setEditingId] = React.useState(null);
+      const [viewData, setViewData] = React.useState(null);
+      const [flags, setFlags] = React.useState(loadFlags());
 
-      const filename = `community_mindmap_${theme}_${style}_${layout}.svg`;
+      // Listen for hash changes
+      React.useEffect(() => {
+        function onHash() { if (window.location.hash === "#flags") setPage("flags"); }
+        window.addEventListener("hashchange", onHash);
+        return () => window.removeEventListener("hashchange", onHash);
+      }, []);
 
+      function toggleFlag(id) {
+        setFlags(prev => {
+          const next = { ...prev, [id]: !(prev[id] !== undefined ? prev[id] : FLAG_DEFS.find(d=>d.id===id)?.default) };
+          saveFlags(next);
+          return next;
+        });
+      }
+      function flagEnabled(id) { const def = FLAG_DEFS.find(d=>d.id===id); return flags[id] !== undefined ? flags[id] : (def ? def.default : false); }
+
+      const emptyForm = () => ({ center: "", groups: [{ title: "", items: [""] }] });
+      const [form, setForm] = React.useState(emptyForm());
+
+      function goHome() { setPage("home"); setEditingId(null); setForm(emptyForm()); window.location.hash = ""; }
+
+      function openBuilder(data, id) {
+        setForm({
+          center: data.center || "",
+          groups: (data.groups || []).map(g => ({
+            title: g.title || "",
+            items: (g.items || []).map(it => typeof it === "string" ? it : it[0] || ""),
+          })),
+        });
+        setEditingId(id || null);
+        setPage("builder");
+      }
+
+      function openViewer(data) { setViewData(data); setPage("viewer"); }
+
+      function handleSave() {
+        const d = { center: form.center, groups: form.groups.map(g => ({ title: g.title, items: g.items.filter(i => i.trim()) })) };
+        setSavedMaps(editingId ? updateMap(editingId, d) : addMap(d));
+        goHome();
+      }
+
+      function handleBuild() {
+        openViewer({
+          center: form.center || "Mindmap",
+          groups: form.groups.filter(g => g.title.trim()).map(g => ({ title: g.title, items: g.items.filter(i => i.trim()) })),
+        });
+      }
+
+      function handleDelete(id, e) {
+        e.stopPropagation();
+        if (confirm("Delete this mindmap?")) setSavedMaps(deleteMap(id));
+      }
+
+      if (page === "flags") return <FlagsPage flags={flags} toggleFlag={toggleFlag} flagEnabled={flagEnabled} onBack={goHome} />;
+      if (page === "builder") return <BuilderPage form={form} setForm={setForm} editingId={editingId} onSave={handleSave} onBuild={handleBuild} onBack={goHome} />;
+      if (page === "viewer") return <ViewerPage data={viewData} onBack={goHome} flagEnabled={flagEnabled} />;
+      return <HomePage savedMaps={savedMaps} onNew={() => { setForm(emptyForm()); setEditingId(null); setPage("builder"); }} onOpen={openViewer} onEdit={openBuilder} onDelete={handleDelete} flagEnabled={flagEnabled} onFlags={() => { window.location.hash = "flags"; setPage("flags"); }} />;
+    }
+
+    /* ================================================================
+       HOME PAGE
+       ================================================================ */
+    function HomePage({ savedMaps, onNew, onOpen, onEdit, onDelete, flagEnabled, onFlags }) {
       return (
         <div>
-          <div className="toolbar">
-            <span className="toolbar-label">Theme:</span>
-            {THEMES.map(t => (
-              <button key={t} className={`btn ${theme === t ? "active" : ""}`}
-                onClick={() => setTheme(t)}>{capitalize(t)}</button>
-            ))}
-            <div className="separator" />
-            <span className="toolbar-label">Style:</span>
-            {STYLES.map(s => (
-              <button key={s} className={`btn ${style === s ? "active" : ""}`}
-                onClick={() => setStyle(s)}>{capitalize(s)}</button>
-            ))}
-            <div className="separator" />
-            <span className="toolbar-label">Layout:</span>
-            {LAYOUTS.map(l => (
-              <button key={l} className={`btn ${layout === l ? "active" : ""}`}
-                onClick={() => setLayout(l)}>{capitalize(l)}</button>
+          <div className="header">
+            <h1>Mindmap <span>Studio</span></h1>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <button className="btn btn-primary" onClick={onNew}>+ New Mindmap</button>
+              <button className="btn btn-ghost btn-sm" onClick={onFlags} title="Feature flags" style={{fontSize:16,opacity:0.4}}>&#9881;</button>
+            </div>
+          </div>
+
+          <div className="section-label">Templates</div>
+          <div className="card-grid">
+            {TEMPLATES.map(tmpl => (
+              <div key={tmpl.id} className="card" onClick={() => onOpen(tmpl)}>
+                <span className="card-badge badge-template">Template</span>
+                <div className="card-preview" dangerouslySetInnerHTML={{ __html: renderMiniPreview(tmpl) }} />
+                <div className="card-center">{tmpl.center}</div>
+                <div className="card-groups">
+                  {tmpl.groups.map((g, i) => <span key={i} className="card-group-tag">{g.title}</span>)}
+                </div>
+                <div className="card-meta">
+                  <span>{tmpl.groups.reduce((a, g) => a + g.items.length, 0)} items</span>
+                  <div className="card-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); onEdit(tmpl, null); }}>Customize</button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-          <div className="viewer">
-            <img src={filename} alt={`${theme} ${style} ${layout}`} />
-            <div className="filename">{filename}</div>
+
+          <div className="section-label">Your Mindmaps</div>
+          <div className="card-grid">
+            <div className="card card-new" onClick={onNew}>
+              <div className="card-new-icon">+</div>
+              <div className="card-new-text">Create new mindmap</div>
+            </div>
+            {savedMaps.map(map => (
+              <div key={map.id} className="card" onClick={() => onOpen(map)}>
+                <span className="card-badge badge-saved">Saved</span>
+                <div className="card-preview" dangerouslySetInnerHTML={{ __html: renderMiniPreview(map) }} />
+                <div className="card-center">{map.center || "Untitled"}</div>
+                <div className="card-groups">
+                  {(map.groups || []).map((g, i) => <span key={i} className="card-group-tag">{g.title}</span>)}
+                </div>
+                <div className="card-meta">
+                  <span>{(map.groups || []).reduce((a, g) => a + (g.items || []).length, 0)} items</span>
+                  <div className="card-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); onEdit(map, map.id); }}>Edit</button>
+                    <button className="btn btn-danger btn-sm" onClick={(e) => onDelete(map.id, e)}>Delete</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {flagEnabled("show-test-suite") && <TestSuite onOpen={onOpen} />}
+        </div>
+      );
+    }
+
+    /* ================================================================
+       FLAGS PAGE
+       ================================================================ */
+    function FlagsPage({ flags, toggleFlag, flagEnabled, onBack }) {
+      return (
+        <div>
+          <div className="back-row">
+            <button className="btn btn-ghost" onClick={onBack}>&larr; Back</button>
+          </div>
+          <div className="builder">
+            <div className="builder-title" style={{marginBottom:8}}>Feature Flags</div>
+            <p style={{color:"#666",fontSize:13,marginBottom:24}}>Toggle experimental features. Changes take effect immediately.</p>
+            {FLAG_DEFS.map(def => (
+              <div key={def.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid #222"}}>
+                <div>
+                  <div style={{fontWeight:600,color:"#ddd",fontSize:14,marginBottom:2}}>{def.name}</div>
+                  <div style={{color:"#777",fontSize:12}}>{def.description}</div>
+                  <div style={{color:"#555",fontSize:11,marginTop:2,fontFamily:"monospace"}}>{def.id}</div>
+                </div>
+                <button
+                  className={`btn btn-sm ${flagEnabled(def.id) ? "btn-primary" : "btn-secondary"}`}
+                  onClick={() => toggleFlag(def.id)}
+                  style={{minWidth:60,justifyContent:"center"}}
+                >{flagEnabled(def.id) ? "ON" : "OFF"}</button>
+              </div>
+            ))}
           </div>
         </div>
       );
     }
 
+    /* ================================================================
+       TEST SUITE
+       ================================================================ */
+    function TestSuite({ onOpen }) {
+      const [expandedLayout, setExpandedLayout] = React.useState(null);
+
+      return (
+        <div>
+          <div className="section-label" style={{marginTop:20}}>Test Suite</div>
+          <div style={{display:"flex",gap:10,marginBottom:16}}>
+            {["horizontal","vertical"].map(layout => (
+              <button key={layout} className={`btn btn-sm ${expandedLayout===layout?"btn-primary":"btn-secondary"}`}
+                onClick={() => setExpandedLayout(expandedLayout===layout?null:layout)}>
+                {layout.charAt(0).toUpperCase()+layout.slice(1)}
+              </button>
+            ))}
+            {expandedLayout && <button className="btn btn-ghost btn-sm" onClick={() => setExpandedLayout(null)}>Collapse</button>}
+          </div>
+          {expandedLayout && (
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {TEST_CASES.map((tc,i) => (
+                <div key={i} style={{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",background:"#222"}}>
+                    <span style={{fontSize:12,fontWeight:600,color:"#6c9bff"}}>{expandedLayout} — {tc.label}</span>
+                    <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={() => onOpen(tc.data)}>Open in viewer</button>
+                  </div>
+                  <div style={{background:"#fff",padding:10}}>
+                    <div style={{overflow:"auto"}} dangerouslySetInnerHTML={{__html: renderSVG(tc.data, "classic", "organic", expandedLayout)}} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!expandedLayout && <div style={{color:"#555",fontSize:13}}>Select a layout above to view test cases.</div>}
+        </div>
+      );
+    }
+
+    /* ================================================================
+       BUILDER PAGE
+       ================================================================ */
+    function BuilderPage({ form, setForm, editingId, onSave, onBuild, onBack }) {
+      function setCenter(v) { setForm(f => ({ ...f, center: v })); }
+
+      function setGroupTitle(gi, v) {
+        setForm(f => { const g = [...f.groups]; g[gi] = { ...g[gi], title: v }; return { ...f, groups: g }; });
+      }
+
+      function setGroupItem(gi, ii, v) {
+        setForm(f => { const g = [...f.groups]; const it = [...g[gi].items]; it[ii] = v; g[gi] = { ...g[gi], items: it }; return { ...f, groups: g }; });
+      }
+
+      function addItem(gi) {
+        setForm(f => { const g = [...f.groups]; g[gi] = { ...g[gi], items: [...g[gi].items, ""] }; return { ...f, groups: g }; });
+      }
+
+      function removeItem(gi, ii) {
+        setForm(f => { const g = [...f.groups]; const it = g[gi].items.filter((_, i) => i !== ii); g[gi] = { ...g[gi], items: it.length ? it : [""] }; return { ...f, groups: g }; });
+      }
+
+      function addGroup() {
+        if (form.groups.length >= 4) return;
+        setForm(f => ({ ...f, groups: [...f.groups, { title: "", items: [""] }] }));
+      }
+
+      function removeGroup(gi) {
+        setForm(f => { const g = f.groups.filter((_, i) => i !== gi); return { ...f, groups: g.length ? g : [{ title: "", items: [""] }] }; });
+      }
+
+      const canBuild = form.center.trim() && form.groups.some(g => g.title.trim());
+
+      return (
+        <div>
+          <div className="back-row">
+            <button className="btn btn-ghost" onClick={onBack}>&larr; Back</button>
+          </div>
+          <div className="builder">
+            <div className="builder-title">{editingId ? "Edit" : "Create"} Mindmap</div>
+
+            <div className="form-row">
+              <label className="form-label">Center Word</label>
+              <input className="form-input" placeholder="e.g. Strategy, Product, Team..." value={form.center} onChange={e => setCenter(e.target.value)} autoFocus />
+            </div>
+
+            <label className="form-label" style={{marginBottom: 12}}>Groups & Items (up to 4 groups)</label>
+
+            {form.groups.map((group, gi) => (
+              <div key={gi} className="group-card">
+                <div className="group-card-header">
+                  <div className="group-number" style={{ background: GROUP_COLORS[gi%4]+"22", color: GROUP_COLORS[gi%4] }}>{gi+1}</div>
+                  <input className="form-input form-input-sm" placeholder={`Group ${gi+1} title...`} value={group.title} onChange={e => setGroupTitle(gi, e.target.value)} />
+                  <button className="remove-btn" title="Remove group" onClick={() => removeGroup(gi)}>&times;</button>
+                </div>
+                <div className="group-items">
+                  {group.items.map((item, ii) => (
+                    <div key={ii} className="group-item-row">
+                      <input className="form-input form-input-sm" placeholder={`Item ${ii+1}...`} value={item} onChange={e => setGroupItem(gi, ii, e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItem(gi); }}} />
+                      <button className="remove-btn" onClick={() => removeItem(gi, ii)}>&times;</button>
+                    </div>
+                  ))}
+                </div>
+                <button className="add-item-btn" onClick={() => addItem(gi)}>+ Add item</button>
+              </div>
+            ))}
+
+            <button className="add-group-btn" onClick={addGroup} disabled={form.groups.length >= 4}>
+              + Add Group {form.groups.length >= 4 ? "(max 4)" : ""}
+            </button>
+
+            <div className="builder-footer">
+              <button className="btn btn-secondary" onClick={onSave}>Save</button>
+              <button className="btn btn-primary" onClick={onBuild} disabled={!canBuild}>Build Mindmap &rarr;</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ================================================================
+       VIEWER PAGE  —  with theme/style/layout + export
+       ================================================================ */
+    function ViewerPage({ data, onBack, flagEnabled }) {
+      const [theme, setTheme] = React.useState("classic");
+      const [style, setStyle] = React.useState("organic");
+      const [layout, setLayout] = React.useState("horizontal");
+      const [copied, setCopied] = React.useState(false);
+
+      const svgString = React.useMemo(
+        () => renderSVG(data, theme, style, layout),
+        [data, theme, style, layout]
+      );
+
+      function exportSVG() {
+        const blob = new Blob([svgString], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${(data.center||"mindmap").toLowerCase().replace(/[^a-z0-9]+/g,"_")}_${theme}_${style}_${layout}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function exportCode() {
+        const title = (data.center||"mindmap").toLowerCase().replace(/[^a-z0-9]+/g,"_");
+        const snippet = `<!-- ============================================================
+     Mindmap: "${data.center||"Mindmap"}"
+     Generated by Mindmap Studio
+     Theme: ${theme} | Style: ${style} | Layout: ${layout}
+
+     USAGE: Copy this entire block and paste it into your HTML page.
+     No JavaScript or external dependencies required.
+
+     CUSTOMIZATION:
+     - To resize: change max-width on the container div
+     - To change background: edit the first <rect> fill color in the SVG
+     - To change colors: search for "fill=" and "stroke=" in the SVG
+     - The SVG scales responsively to fit its container
+     ============================================================ -->
+
+<div style="max-width: 900px; margin: 0 auto; padding: 16px;">
+  ${svgString}
+</div>`;
+
+        // Copy to clipboard
+        navigator.clipboard.writeText(snippet).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }).catch(() => {
+          // Fallback: download as file
+          const blob = new Blob([snippet], { type: "text/html" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${title}_${theme}_${style}_${layout}_embed.html`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+      }
+
+      function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+      return (
+        <div>
+          <div className="back-row">
+            <button className="btn btn-ghost" onClick={onBack}>&larr; Back</button>
+          </div>
+
+          <div className="toolbar">
+            <span className="toolbar-label">Theme:</span>
+            {THEME_NAMES.map(t => (
+              <button key={t} className={`tbtn ${theme===t?"active":""}`} onClick={() => setTheme(t)}>{cap(t)}</button>
+            ))}
+            <div className="separator" />
+            <span className="toolbar-label">Style:</span>
+            {STYLE_NAMES.map(s => (
+              <button key={s} className={`tbtn ${style===s?"active":""}`} onClick={() => setStyle(s)}>{cap(s)}</button>
+            ))}
+            <div className="separator" />
+            <span className="toolbar-label">Layout:</span>
+            {LAYOUT_NAMES.map(l => (
+              <button key={l} className={`tbtn ${layout===l?"active":""}`} onClick={() => setLayout(l)}>{cap(l)}</button>
+            ))}
+          </div>
+
+          <div className="viewer">
+            <div className="svg-canvas" dangerouslySetInnerHTML={{ __html: svgString }} />
+          </div>
+
+          <div className="export-bar">
+            <span className="export-bar-label">Export</span>
+            <button className="btn btn-export btn-sm" onClick={exportSVG}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download SVG
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={exportCode} title="Copy embeddable HTML snippet to clipboard — paste into any webpage, zero dependencies">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              {copied ? "Copied!" : "Copy Embed Code"}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ================================================================
+       MOUNT
+       ================================================================ */
     ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>

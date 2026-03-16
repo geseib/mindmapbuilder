@@ -1,40 +1,97 @@
-# Mindmap Builder
+# Mindmap Studio
 
-A Python-based mindmap generator that produces SVG and PNG outputs with clickable hyperlinks, multiple color themes, line styles, and layout options.
+A browser-based mindmap builder and viewer. Create mindmaps visually, customize with themes/styles/layouts, and export as SVG or embeddable HTML — all in a single `index.html` file with zero dependencies.
 
-![Classic Organic Horizontal](community_mindmap_classic_organic_horizontal.png)
+![Home Page](screenshots/home.png)
 
 ## Features
 
-- **Dictionary-driven** -- define your mindmap content in a simple Python dict
-- **Clickable SVG hyperlinks** -- each node can link to a URL (opens in new tab)
-- **4 color themes** -- Classic, Midnight, Ember, Safari
-- **2 line styles** -- Organic (bezier curves) and Angular (90-degree lines)
-- **2 layouts** -- Horizontal (wide) and Vertical (narrow/portrait)
-- **React viewer** -- browser-based switcher for all theme/style/layout combos
+- **Visual Builder** -- create mindmaps with a form-based UI (center word, up to 4 groups, unlimited items per group)
+- **Live Viewer** -- instantly preview your mindmap with real-time theme/style/layout switching
+- **4 Color Themes** -- Classic, Midnight, Ember, Safari
+- **2 Line Styles** -- Organic (smooth bezier curves) and Angular (90-degree lines)
+- **2 Layouts** -- Horizontal (landscape) and Vertical (portrait)
+- **Templates** -- 3 built-in templates (Community, Startup, Web Dev) to start from or customize
+- **Local Storage** -- your mindmaps are saved in the browser and persist across sessions
+- **Export SVG** -- download any mindmap as a scalable vector graphic
+- **Copy Embed Code** -- one-click copy of a self-contained HTML snippet you can paste into any webpage (zero dependencies)
+- **Tapered Branches** -- lines taper from thick to thin for a polished, hand-drawn feel
+- **Adaptive Sizing** -- canvas auto-scales based on content length and group count
+- **Feature Flags** -- toggle experimental features via a settings page
+- **Python Generator** -- `mm.py` for batch-generating SVG/PNG files programmatically
+
+## Screenshots
+
+### Home Page
+
+Browse templates, view saved mindmaps, or create a new one.
+
+![Home](screenshots/home.png)
+
+### Builder
+
+Form-based editor with center word, groups, and items. Save or build instantly.
+
+![Builder](screenshots/builder-empty.png)
+
+### Viewer -- Classic Theme (Horizontal)
+
+Switch themes, styles, and layouts in real time. Export from the bottom bar.
+
+![Viewer Classic Horizontal](screenshots/viewer-horizontal-classic.png)
+
+### Viewer -- Midnight Theme (Horizontal)
+
+![Viewer Midnight Horizontal](screenshots/viewer-horizontal-midnight.png)
+
+### Horizontal Layout
+
+![Horizontal Layout](screenshots/horizontal-4g.png)
+
+### Vertical Layout
+
+![Vertical Layout](screenshots/vertical-4g.png)
+
+## Quick Start
+
+No build step required. Just open the file in a browser:
+
+```bash
+# Option 1: local server (recommended)
+python -m http.server 8765
+# Open http://localhost:8765
+
+# Option 2: open directly
+open index.html
+```
+
+## How It Works
+
+1. **Home** -- pick a template or click "+ New Mindmap"
+2. **Builder** -- enter a center word, add up to 4 groups with items, then click "Build Mindmap"
+3. **Viewer** -- switch between themes (Classic / Midnight / Ember / Safari), styles (Organic / Angular), and layouts (Horizontal / Vertical)
+4. **Export** -- download the SVG file or copy an embeddable HTML snippet to your clipboard
 
 ## Themes
 
-### Midnight
-![Midnight](community_mindmap_midnight_organic_horizontal.png)
+| Theme | Background | Style |
+|-------|-----------|-------|
+| **Classic** | White | Colorful branches on white |
+| **Midnight** | Dark navy | Muted blues and grays |
+| **Ember** | Deep red | Warm golds and reds |
+| **Safari** | Earthy brown | Greens, golds, and oranges |
 
-### Ember
-![Ember](community_mindmap_ember_organic_horizontal.png)
+## Export Options
 
-### Safari
-![Safari](community_mindmap_safari_organic_horizontal.png)
+### Download SVG
+Click "Download SVG" to save the mindmap as a vector file. The filename includes the theme, style, and layout (e.g., `community_classic_organic_horizontal.svg`).
 
-## Styles
+### Copy Embed Code
+Click "Copy Embed Code" to copy a self-contained HTML snippet to your clipboard. Paste it into any webpage -- no JavaScript or external dependencies required. The SVG scales responsively to fit its container.
 
-### Angular
-![Angular](community_mindmap_classic_angular_horizontal.png)
+## Python Generator
 
-## Layouts
-
-### Vertical
-![Vertical](community_mindmap_classic_organic_vertical.png)
-
-## Quick Start
+For batch generation or CI/CD integration, use the Python script:
 
 ```bash
 pip install matplotlib
@@ -42,8 +99,6 @@ python mm.py
 ```
 
 This generates all combinations of theme/style/layout as SVG and PNG files.
-
-## Usage
 
 ```python
 from mm import draw_mindmap, MINDMAP
@@ -63,57 +118,16 @@ draw_mindmap(MINDMAP, "dark.svg", theme="midnight", style="angular", layout="ver
 | `style` | `organic`, `angular` | `organic` |
 | `layout` | `horizontal`, `vertical` | `horizontal` |
 
-## Configuration
+## Project Structure
 
-Edit the `MINDMAP` dict in `mm.py` to define your own content:
-
-```python
-MINDMAP = {
-  "center": {
-    "label": "My Topic",
-    "url": "https://example.com",
-  },
-  "groups": [
-    {
-      "title": "Category",
-      "url": "https://example.com/category",
-      "position": (-0.90, 0.35),
-      "side": "left",
-      "half_width": 0.22,
-      "items": [
-        ("Item 1", "https://example.com/item1"),
-        ("Item 2", "https://example.com/item2"),
-      ],
-    },
-    # ... more groups
-  ],
-}
 ```
-
-## Custom Themes
-
-Add a theme to the `THEMES` dict:
-
-```python
-THEMES["mytheme"] = {
-  "background":    "#FFFFFF",
-  "center_bg":     "#E0E0E0",
-  "center_border": "#AAAAAA",
-  "center_text":   "#333333",
-  "branches": ["#5B9BD5", "#70AD47", "#E07B7B", "#ED7D31"],
-}
-```
-
-## React Viewer
-
-Open `index.html` in a browser (via a local server) to interactively switch between all theme/style/layout combinations:
-
-```bash
-python -m http.server 8765
-# Open http://localhost:8765
+mindmap/
+  index.html    -- Single-file React app (viewer + builder + renderer)
+  mm.py         -- Python SVG/PNG generator
+  screenshots/  -- README screenshots
 ```
 
 ## Requirements
 
-- Python 3.7+
-- matplotlib
+- Any modern browser (Chrome, Firefox, Safari, Edge)
+- Python 3.7+ and matplotlib (only for the Python generator)
